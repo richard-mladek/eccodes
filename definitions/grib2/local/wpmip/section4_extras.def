@@ -1,0 +1,13 @@
+# (C) Copyright 2005- ECMWF.
+
+# See ECC-1846
+# This is ecmf local so we should not use MasterDir. Instead we look for pseudocentre (conceptsDir2) then centre (conceptsLocalDirAll)
+
+concept modelName(unknown, "modelNameConcept.def", conceptsDir2, conceptsLocalDirAll): no_copy, dump;
+
+if (modelName isnot "unknown") {
+   concept modelVersion(unknown, "modelVersionConcept.[modelName].def", conceptsDir2, conceptsLocalDirAll): no_copy, dump, read_only;
+}
+
+meta wpmip_modelName sprintf("%s-%s-%s", centre, modelName, modelVersion);
+alias mars.model = wpmip_modelName;

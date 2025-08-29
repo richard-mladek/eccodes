@@ -1,0 +1,73 @@
+# (C) Copyright 2005- ECMWF.
+
+# wpmip
+constant marsClass = 'wp';
+
+alias parameter.paramId=paramId;
+alias parameter.shortName=shortName;
+alias parameter.units=units;
+alias parameter.name=name;
+
+alias mars.expver = marsExpver;
+alias mars.class  = marsClass;
+alias mars.param = paramId;
+alias mars.origin = centre;
+
+alias mars.type = marsType;
+
+concept marsType(unknown) {
+
+   an = {
+     typeOfProcessedData = 0;
+   }
+   "2" = {
+     typeOfProcessedData = 0;
+   }
+   fc = {
+     typeOfProcessedData = 2;
+   }
+   "9" = {
+     typeOfProcessedData = 2;
+   }
+
+   cf = {
+     typeOfProcessedData = 3;
+   }
+   "10" = {
+     typeOfProcessedData = 3;
+   }
+
+   pf = {
+     typeOfProcessedData = 4;
+   }
+   "11" = {
+     typeOfProcessedData = 4;
+   }
+}
+
+# See GRIB-205 re no_copy
+concept marsStream(unknown) {
+
+    oper = {
+      typeOfProcessedData = 0;
+    }
+    oper = {
+      typeOfProcessedData = 2;
+    }
+
+    enfo = {
+      typeOfProcessedData = 3;
+    }
+    enfo = {
+      typeOfProcessedData = 4;
+    }
+    enfo = {
+      typeOfProcessedData = 8;
+    }
+} : no_copy;
+
+alias mars.stream = marsStream;
+alias mars.type   = marsType;
+
+unalias mars.centre;
+unalias mars.origin;
