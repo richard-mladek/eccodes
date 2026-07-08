@@ -270,6 +270,8 @@ int G2EndStep::unpack_multiple_time_ranges_long_(long* val, size_t* len)
             else {
                 *val = start_step_value;
             }
+            if ((err = grib_set_long_internal(h, "endStepUnit", step_units)) != GRIB_SUCCESS)
+                return err;
             return GRIB_SUCCESS;
         }
     }
@@ -346,9 +348,13 @@ int G2EndStep::unpack_multiple_time_ranges_double_(double* val, size_t* len)
 
             if (add_time_range) {
                 *val = (start_step + time_range).value<double>(eccodes::Unit(step_units));
+                if ((err = grib_set_long_internal(h, "endStepUnit", step_units)) != GRIB_SUCCESS)
+                    return err;
             }
             else {
                 *val = start_step.value<double>(eccodes::Unit(start_step_unit));
+                if ((err = grib_set_long_internal(h, "endStepUnit", start_step_unit)) != GRIB_SUCCESS)
+                    return err;
             }
 
             return GRIB_SUCCESS;
