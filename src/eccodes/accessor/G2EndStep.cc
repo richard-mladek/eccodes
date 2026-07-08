@@ -210,6 +210,9 @@ int G2EndStep::unpack_multiple_time_ranges_long_(long* val, size_t* len)
     int err = 0;
     grib_handle* h          = get_enclosing_handle();
     long numberOfTimeRanges = 0, step_units = 0, start_step_value = 0;
+    int add_time_range = 1; /* whether we add lengthOfTimeRange */
+    long MTG2Switch = 0; /* use the MTG2 switch value to deprecate old hacky logic */
+    long typeOfTimeIncrementSwitch = 0; /* configurable switch to enable endStep for typeOfTimeIncrement=1 */
 
     size_t count = 0;
     long arr_typeOfTimeIncrement[MAX_NUM_TIME_RANGES] = {0,};
@@ -221,6 +224,10 @@ int G2EndStep::unpack_multiple_time_ranges_long_(long* val, size_t* len)
     if ((err = grib_get_long_internal(h, step_units_, &step_units)))
         return err;
     if ((err = grib_get_long_internal(h, numberOfTimeRanges_, &numberOfTimeRanges)))
+        return err;
+    if ((err = grib_get_long_internal(h, "MTG2Switch", &MTG2Switch)))
+        return err;
+    if ((err = grib_get_long_internal(h, "typeOfTimeIncrementSwitch", &typeOfTimeIncrementSwitch)))
         return err;
     if (numberOfTimeRanges > MAX_NUM_TIME_RANGES) {
         grib_context_log(h->context, GRIB_LOG_ERROR, "Too many time range specifications!");
@@ -247,7 +254,22 @@ int G2EndStep::unpack_multiple_time_ranges_long_(long* val, size_t* len)
             if (err != GRIB_SUCCESS)
                 return err;
 
-            *val = start_step_value + the_coded_time_range;
+            if (i > 0 && arr_typeOfTimeIncrement[i - 1] == 1 && MTG2Switch == 0) {
+                /* See GRIB-488 & ECC-1734 */
+                /* Note: For this case, lengthOfTimeRange is not related to step and should not be used to calculate step */
+                add_time_range = 0;
+                /* Check if typeOfTimeIncrementSwitch is enabled, or if it's a special expver case */
+                if (typeOfTimeIncrementSwitch == 1 || is_special_expver(h)) {
+                    add_time_range = 1;
+                }
+            }
+
+            if (add_time_range) {
+                *val = start_step_value + the_coded_time_range;
+            }
+            else {
+                *val = start_step_value;
+            }
             return GRIB_SUCCESS;
         }
     }
@@ -265,6 +287,9 @@ int G2EndStep::unpack_multiple_time_ranges_double_(double* val, size_t* len)
     long step_units         = 0;
     long start_step_value   = 0;
     long start_step_unit    = 0;
+    int add_time_range = 1; /* whether we add lengthOfTimeRange */
+    long MTG2Switch = 0; /* use the MTG2 switch value to deprecate old hacky logic */
+    long typeOfTimeIncrementSwitch = 0; /* configurable switch to enable endStep for typeOfTimeIncrement=1 */
 
     size_t count = 0;
     long arr_typeOfTimeIncrement[MAX_NUM_TIME_RANGES] = {0,};
@@ -282,6 +307,10 @@ int G2EndStep::unpack_multiple_time_ranges_double_(double* val, size_t* len)
         return err;
 
     if ((err = grib_get_long_internal(h, numberOfTimeRanges_, &numberOfTimeRanges)))
+        return err;
+    if ((err = grib_get_long_internal(h, "MTG2Switch", &MTG2Switch)))
+        return err;
+    if ((err = grib_get_long_internal(h, "typeOfTimeIncrementSwitch", &typeOfTimeIncrementSwitch)))
         return err;
     if (numberOfTimeRanges > MAX_NUM_TIME_RANGES) {
         grib_context_log(h->context, GRIB_LOG_ERROR, "Too many time range specifications!");
@@ -303,9 +332,24 @@ int G2EndStep::unpack_multiple_time_ranges_double_(double* val, size_t* len)
             /* Found the required time range. Get the other two keys from it */
             long the_coded_unit       = arr_coded_unit[i];
             long the_coded_time_range = arr_coded_time_range[i];
-
             eccodes::Step time_range{ the_coded_time_range, the_coded_unit };
-            *val = (start_step + time_range).value<double>(eccodes::Unit(step_units));
+
+            if (i > 0 && arr_typeOfTimeIncrement[i - 1] == 1 && MTG2Switch == 0) {
+                /* See GRIB-488 & ECC-1734 */
+                /* Note: For this case, lengthOfTimeRange is not related to step and should not be used to calculate step */
+                add_time_range = 0;
+                /* Check if typeOfTimeIncrementSwitch is enabled, or if it's a special expver case */
+                if (typeOfTimeIncrementSwitch == 1 || is_special_expver(h)) {
+                    add_time_range = 1;
+                }
+            }
+
+            if (add_time_range) {
+                *val = (start_step + time_range).value<double>(eccodes::Unit(step_units));
+            }
+            else {
+                *val = start_step.value<double>(eccodes::Unit(start_step_unit));
+            }
 
             return GRIB_SUCCESS;
         }
